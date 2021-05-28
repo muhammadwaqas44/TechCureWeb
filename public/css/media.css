@@ -1,0 +1,164 @@
+@media (max-width: 1280px){
+.previous-visit .new-table tbody tr td {
+    padding: 7px 0px 2px 4px;
+}
+.previous-visit .view-btn, .previous-visit .revise-btn {
+    width: 48px;
+}
+}
+
+@media (max-width: 1199px){
+.side-navbar .left-icon {
+    display: block;
+    margin: 0 auto 6px;
+    font-size: 1rem;
+}
+.side-navbar li a{
+	display: block;
+}
+.slide-menu{
+    display: block;
+}
+}
+
+@media (max-width: 1024px){
+.new-table .manage-btn {
+    margin-right: 0px;
+}
+.calender-btns input[type="text"] {
+    width: 270px;
+}
+.side-navbar a.brand-small strong {
+    font-size: 15px;
+    color: #fff !important;
+    display: block;
+}
+}
+
+@media (max-width: 768px){
+.calender-btns input[type="text"] {
+    width: 170px;
+}
+.bootstrap-datetimepicker-widget .datepicker
+{
+    width: 100% !important;
+}
+.new-table .manage-btn {
+    margin-bottom: 9px;
+}
+.calender-btns li {
+    margin:0 3px 20px 0;
+}
+.next-visit-no a {
+    width: 62px;
+}
+.sub-btns a {
+    width: 11.49%;
+}
+.refer-to .templates-show a {
+    width: 23.2%;
+}
+.save-temp-btn, .send-pateint-btn {
+    width: 137px;
+    font-size: 12px;
+    margin: 7px 0 0 0;
+}
+.section-padding {
+    padding: 3rem 0 0;
+}
+}
+
+
+@media (max-width: 600px){
+.box-contain {
+    padding-top: 21px;
+    padding-bottom: 100px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.login-btn button[type="submit"],
+.login-btn .singup{
+    width: 130px;
+}
+form.top-serach {
+    margin: 0 0 0 11px;
+    width: 201px;
+    overflow: hidden;
+}
+.avater-name{
+	margin-right: 0 !important;
+}
+.total-case {
+    margin-top: 0px;
+}
+.remove-pr{
+    padding-right: 15px !important;
+}
+.margin-20-mobile{
+    margin: 0 15px;
+}
+.patient-pic {
+    height: 145px;
+}
+.mobile-m-top{
+    margin-top: 20px;
+}
+.sub-btns a {
+    width: 66px;
+}
+.start-video {
+    background: #4a8cff;
+}
+.start-video img {
+    object-fit: contain;
+    border: solid 1px #4a8cff;
+}
+.templates-row input {
+    width: calc(100% - 95px);
+}
+.medications-row .intake .as-use {
+    margin-bottom: 5px;
+}
+li.treating-condition {
+    margin-top: 16px !important;
+    margin-bottom: 33px !important;
+}
+.m-pading-15{
+    padding: 15px !important;
+}
+.special-dosage .add-dosage {
+    font-size: 13px;
+    margin: 0px 0 0 0px;
+    padding: 0 10px;
+}
+.templates-show a {
+    width: 30.93%;
+}
+.medications-row ul li {
+    margin: 8px 3px 10px 0px;
+}
+.refer-to .templates-show a {
+    width: 30.93%;
+}
+.save-tempaltes {
+    height: 126px;
+}
+.side-navbar .sidenav-header {
+    padding: 25px 11px;
+}
+.weight-custom-margin{
+    margin-left:24px;
+}
+
+.height-custom-margin{
+    margin-left:4px;
+}
+
+.weight-custom-margin-repeat{
+    margin-left:147px;
+}
+
+.height-custom-margin-repeat{
+    margin-left:3px;
+}
+}

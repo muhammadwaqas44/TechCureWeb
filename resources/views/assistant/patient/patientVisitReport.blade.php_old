@@ -1,0 +1,893 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Patient Report</title>
+        <link rel="shortcut icon" href="{{ asset('public/admin/dist/img/favicon-32x32.png') }}" />
+        <link rel="stylesheet" href="{{ asset('public/vendor/font-awesome/css/font-awesome.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('public/admin/dist/css/adminlte.min.css') }}">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/earlyaccess/notonastaliqurdudraft.css">
+        <script src="{{ asset('public/admin/plugins/jquery/jquery.min.js') }}"></script>
+
+        <style type="text/css">
+            body, html {
+                min-height: auto;
+            }
+            body{
+                position: relative;
+                padding-bottom: 100px;
+            }
+            .urdustyle {
+                font-family: 'Noto Nastaliq Urdu Draft';
+                font-size: 18px;
+            }
+        
+            td {
+                padding: 0px !important;
+            }
+        
+            th {
+                padding: 0px !important;
+            }
+        
+            table {
+                margin-bottom: 5px !important;
+            }
+        
+            #printBtn {
+                background-color: #ffc107;
+                border-color: #ffc107;
+                color: #ffffff;
+                float: right;
+            }
+        
+            #apt-list {
+                background-color: #ffc107;
+                border-color: #ffc107;
+                color: #ffffff;
+                float: right;
+            }
+            /* .back-img{
+                height: 100%;
+                margin: 0px 0px 0px;
+                position: absolute;	
+                
+            } */
+            .content-wrapper {
+                background: #f4f6f9;
+                margin-left: 204px !important;
+            }
+        
+            .topbar {
+                background: linear-gradient(120deg, #fff, #3c3b54);
+                width: 100%;
+                position: relative;
+                top: 0;
+                height: 60px;
+                padding: 15px;
+                z-index: 1;
+            }
+
+            .fill-bg{
+                background: rgb(193, 193, 193);
+            }
+
+            .back-btn-custom{
+                background: blue;
+                padding: 10px;
+                color: #fff;
+                border-radius: 5px;
+                margin-top: 10px;
+            }
+        
+            @media    print {
+                td.vendorListHeading {
+                    background-color: #c1c1c1 !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                .back-btn-custom{
+                    display:none;
+                }
+                
+            }
+        
+            @media    print {
+                .vendorListHeading td {
+                    color: white !important;
+                }
+            }
+        
+            @media    screen {
+                div.divFooter {
+                    display: none;
+                }
+                
+            }
+        
+            @media    print {
+                /* div.divFooter {
+                    position : fixed;
+                    bottom: 0px;
+                } */
+                /* div.back-img{
+                    position: fixed;
+                    margin: 2px 0px 0px;
+                } */
+                /* body, html {
+                height: 100%;
+            }
+            body{
+                position: relative;
+                padding-bottom: 100px;
+            } */
+                /* div.back-img-footer{
+                    position: fixed;
+                    bottom: 0;
+                } */
+                /* div.back-img-header{
+                    position: fixed;
+                    top: 0;
+                    z-index: inherit;
+                } */
+            }
+        
+            @media    all {
+                .page-break {
+                }
+            }
+        
+            @media    print {
+                .page-break {
+                    display: block;
+                    page-break-before: always;
+                }
+                .page-break1 {
+                    display: block;
+                    page-break-before: always;
+                }
+                .page_break_inside {
+                    display: block;
+                    page-break-inside: avoid;
+                }
+                body::-webkit-scrollbar {
+                width: 1px;
+                }
+                
+                body::-webkit-scrollbar-track {
+                background: #ddd;
+                }
+                
+                body::-webkit-scrollbar-thumb {
+                background: white; 
+                }
+            }
+        
+            .col-1 {
+                width: 8.33%;
+            }
+        
+            .col-2 {
+                width: 16.66%;
+            }
+        
+            .col-3 {
+                width: 25%;
+            }
+        
+            .col-4 {
+                width: 33.33%;
+            }
+        
+            .col-5 {
+                width: 41.66%;
+            }
+        
+            .col-6 {
+                width: 50%;
+            }
+        
+            .col-7 {
+                width: 58.33%;
+            }
+        
+            .col-8 {
+                width: 66.66%;
+            }
+        
+            .col-9 {
+                width: 75%;
+            }
+        
+            .col-10 {
+                width: 83.33%;
+            }
+        
+            .col-11 {
+                width: 91.66%;
+            }
+        
+            .col-12 {
+                width: 100%;
+            }
+        
+            .lb-test{
+                background: #464646a8;
+                text-transform: uppercase;
+                letter-spacing: 15px;
+                padding: 5px 0px;
+                margin: 30px 0px;
+                border-radius: 10px;}
+                .align-center {
+                text-align: center;
+            }
+            .inner {
+                margin: 0 auto;
+            max-width: 90%;
+        
+            }
+        </style>
+</head>
+    <body onload="window.print();">
+
+    <div class="col-lg-12 col-md-12 col-sm-12" align="right">
+        <a type="button" class="back-btn-custom" href="{{route('practitionerAppointmentList')}}">Back</a>
+    </div>
+
+    {{-- @if($practitioner->prescription_pad_header_image != null && Storage::exists($practitioner->prescription_pad_header_image))
+    <div class="back-img-header">
+        <img style="width: 1348px; height: 130px;" src="{{ asset('storage/app/public/'.$practitioner->prescription_pad_header_image) }}" alt="Letter Pad Header Image"> 
+    </div>
+    @endif --}}
+    
+    {{-- <div class="clearfix">
+    @if($practitioner->prescription_pad_sidebar_image != null && Storage::exists($practitioner->prescription_pad_sidebar_image))
+    <div class="back-img" style="float:left;">
+        <img src="{{ asset('storage/app/public/'.$practitioner->prescription_pad_sidebar_image) }}" alt="Letter Pad Sidebar Image"> 
+    </div>
+    @endif --}}
+
+    <div class="content-wrapper" id="reportbody" style="margin:0px;">
+        <section class="content" style="padding-bottom: 0px;margin-top: 4px;">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-2">     
+                    </div>
+                    <div class="col-sm-10">
+                        <h1 style="font-size: 50px;">
+                            <center></center>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+            <div style="border:2px solid black;"></div>
+        </section>
+        
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6" style="font-size: 18px;">
+                        @if(isset($practitioner->name))
+                            <b style="font-size: 30px;">{{ $practitioner->name }}</b><br>
+                        @endif
+                        <div style="font-size: 14px;"><strong> 
+                            @if(isset($practitioner->qualification->title))
+                                <p style="text-align: left;">{{ $practitioner->qualification->title }} </p>
+                            @endif
+                            @if(isset($practitioner->description))
+                                <p style="text-align: left;">{{ $practitioner->description }}</p>
+                            @endif
+                            @if(isset($practitioner->address))
+                                Address: {{ $practitioner->address }} </strong>
+                            <br>
+                            @endif
+                            <br>
+                        </div>
+                    </div>
+                    <div class="col-sm-1"></div>
+                    <div class="col-sm-3">
+                        <h2></h2>
+                        <p>
+                            @if(isset($patient->name))
+                                <b>Patient Name:</b> {{ $patient->name }} <br>
+                            @endif
+
+                            @if(isset($patient->age) && isset($patient->gender))
+                            <b>Age / Sex:</b> {{ $patient->age }} Years / @if($patient->gender == 1) Male @elseif($patient->gender == 2) Female @elseif($patient->gender == 3) Other @endif <br>
+                            @endif
+
+                            @if(isset($patientVisit->created_at))
+                                <b>Visit Date:</b> {{ date('d-M-Y', strtotime($patientVisit->created_at)) }} <br>
+                            @endif
+
+                            @if(isset($patient->address))
+                                <b>Address:</b> {{ $patient->address }}
+                            @endif
+                        </p>
+                    </div>
+
+                    @if(isset($patientVisit->visit_number))
+                    <div class="col-sm-2">
+                        <div style="width: 150px;height:170px;margin-top: 4px;">
+                            <div style="text-align: center; border: 2px solid black;">
+                                {{ $patientVisit->visit_number }}
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                </div>
+            </div>
+        </section>
+
+        @if(isset($practitioner->phone))
+        <section class="content" style="padding-bottom: 0px;margin-top: 30px;">
+            <div class="container-fluid">
+                <div class="row">
+                    
+                    <div class="col-sm-12">
+                        <b>Whatsapp No:</b> {{ $practitioner->phone }}
+                    </div>
+                </div>
+            </div>
+            <div style="border:2px solid black;"></div>
+        </section>
+        @endif
+    
+        @if(isset($patientVitals)) 
+        <section class="content page_break_inside">
+            <div class="container-fluid">
+                <div class="row">
+                    @if(isset($patientVitals->weight_kgs) || isset($patientVitals->weight_lbs) || isset($patientVitals->height_ft) || isset($patientVitals->height_in) || isset($patientVitals->height_cms) || isset($patientVitals->bmi) || isset($patientVitals->bsf)|| isset($patientVitals->bsr) || isset($patientVitals->bp_sys) || isset($patientVitals->bp_dias) || isset($patientVitals->pulse))
+                    <table class="mt-3">
+                        <tbody>
+                            <tr>
+                                @if(isset($patientVitals->weight_kgs) || isset($patientVitals->weight_lbs))
+                                <td>
+                                    <p><b> Weight </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    @if(isset($patientVitals->weight_kgs))
+                                        <p> {{ $patientVitals->weight_kgs }} Kgs </p>
+                                    @else
+                                        <p> {{ $patientVitals->weight_lbs }} Lbs </p>
+                                    @endif
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->height_ft) || isset($patientVitals->height_in) || isset($patientVitals->height_cms))
+                                <td>
+                                    <p> &nbsp; <b> Height </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    @if(isset($patientVitals->height_ft) || isset($patientVitals->height_in))
+                                        <p> {{ $patientVitals->height_ft }} Feet {{ $patientVitals->height_in }}  Inches</p>
+                                    @else
+                                        <p> {{ $patientVitals->height_cms }} CMs </p>
+                                    @endif
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bmi))
+                                <td>
+                                    <p> &nbsp; <b> BMI </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bmi }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bsf))
+                                <td>
+                                    <p> &nbsp; <b> BSF </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bsf }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bsr))
+                                <td>
+                                    <p> &nbsp; <b> BSR </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bsr }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bp_sys) && isset($patientVitals->bp_dias))
+                                <td>
+                                    <p> &nbsp; <b> SBP/DBP </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bp_sys }}/{{ $patientVitals->bp_dias }} mmHg </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->pulse))
+                                <td>
+                                    <p> &nbsp; <b> Pulse </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->pulse }}  BPM </p>
+                                </td>
+                                @endif
+
+                            </tr>
+                        </tbody>
+                    </table>
+                    @endif
+
+                    @if(isset($patientVitals->weight_kgs_2) || isset($patientVitals->weight_lbs_2) || isset($patientVitals->height_ft_2) || isset($patientVitals->height_in_2) || isset($patientVitals->height_cms_2) || isset($patientVitals->bmi_2) || isset($patientVitals->bsf_2)|| isset($patientVitals->bsr_2) || isset($patientVitals->bp_sys_2) || isset($patientVitals->bp_dias_2) || isset($patientVitals->pulse_2))
+                    <table>
+                        <tbody>
+                            <tr>
+                                @if(isset($patientVitals->weight_kgs_2) || isset($patientVitals->weight_lbs_2))
+                                <td>
+                                    <p><b> Weight </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    @if(isset($patientVitals->weight_kgs_2))
+                                        <p> {{ $patientVitals->weight_kgs_2 }} Kgs </p>
+                                    @else
+                                        <p> {{ $patientVitals->weight_lbs_2 }} Lbs </p>
+                                    @endif
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->height_ft_2) || isset($patientVitals->height_in_2) || isset($patientVitals->height_cms_2))
+                                <td>
+                                    <p> &nbsp; <b> Height </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    @if(isset($patientVitals->height_ft_2) || isset($patientVitals->height_in_2))
+                                        <p> {{ $patientVitals->height_ft_2 }} Feet {{ $patientVitals->height_in_2 }}  Inches</p>
+                                    @else
+                                        <p> {{ $patientVitals->height_cms_2 }} CMs </p>
+                                    @endif
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bmi_2))
+                                <td>
+                                    <p> &nbsp; <b> BMI </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bmi_2 }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bsf_2))
+                                <td>
+                                    <p> &nbsp; <b> BSF </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bsf_2 }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bsr_2))
+                                <td>
+                                    <p> &nbsp; <b> BSR </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bsr_2 }} </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->bp_sys_2) && isset($patientVitals->bp_dias_2))
+                                <td>
+                                    <p> &nbsp; <b> SBP/DBP </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->bp_sys_2 }}/{{ $patientVitals->bp_dias_2 }} mmHg </p>
+                                </td>
+                                @endif
+
+                                @if(isset($patientVitals->pulse_2))
+                                <td>
+                                    <p> &nbsp; <b> Pulse </b> &nbsp; </p>
+                                </td>
+                                <td>
+                                    <p> {{ $patientVitals->pulse_2 }}  BPM </p>
+                                </td>
+                                @endif
+
+                            </tr>
+                        </tbody>
+                    </table>
+                    @endif
+                </div>
+            </div>
+            <div style="border:1px solid black;"></div>
+        </section>
+        @endif
+    
+        @if(isset($patientVisitPrescription->prescription))
+        <section class="content">
+            <div class="container-fluid">
+                <div>
+                    {!! $patientVisitPrescription->prescription !!}
+                </div>
+            </div>
+        </section>
+        @endif
+    
+        <section class="content page_break_inside" style="margin-top: 20px;">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <table class="table">
+                            <tbody>
+                            @if($practitioner->prescription_pad_other_image != null && Storage::exists($practitioner->prescription_pad_other_image))
+                            <tr>
+                                <td style="border-top: 0px solid black;">
+                                   <center><img style="width:172px; height: 72px;" src="{{ asset('storage/app/public/'.$practitioner->prescription_pad_other_image) }}" alt="Letter Pad Other Image"> </center>
+                                </td>
+                            </tr>
+                            @endif
+                            @if(isset($practitioner->name))
+                            <tr>
+                                <td style="border-top: 1px solid black">
+                                    <center><p>{{ $practitioner->name }}</p></center>
+                                </td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    
+        @if(count($patientLabTests) > 0)
+            @if(isset($practitioner))
+            <section class="content page-break">
+                <div class="container-fluid">
+                    <div class="row">
+                        <table width="100%" class="table fmh_tab tableWidth">
+                            <tbody>
+                                <tr style="border: 0px solid black">
+                                    <td style="border: 0px solid black">
+                                        @if(isset($practitioner->name))
+                                            <h1 style="text-align: center;">{{ $practitioner->name }}</h1>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr style="border: 0px solid black">
+                                    <td style="border: 0px solid black">
+                                        @if(isset($practitioner->qualification->title))
+                                        <p style="text-align: center;">{{ $practitioner->qualification->title }}</p>
+                                        @endif
+                                        @if(isset($practitioner->description))
+                                        <p style="text-align: center;">{{ $practitioner->description }}</p> 
+                                        @endif
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            @endif
+                
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="inner " style="text-align:center;">
+                        <h2 class="align-center lb-test">Laboratory Tests:</h2>
+                    </div>
+                    <div class="row">
+                        <table width="100%" class="table fmh_tab tableWidth">
+                            <tbody>
+                                <tr style="border: 0px solid black">
+                                    @if(isset($patient->name))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Patient Name:</b> {{ $patient->name }} 
+                                        </p>
+                                    </td>
+                                    @endif
+
+                                    @if(isset($patient->age) && isset($patient->gender))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Age / Sex:</b> {{ $patient->age }} Years / @if($patient->gender == 1) Male @elseif($patient->gender == 2) Female @elseif($patient->gender == 3) Other @endif                                          
+                                        </p>
+                                    </td>
+                                    @endif
+
+                                    @if(isset($patientVisit->created_at))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Date:</b> {{ date('d-M-Y', strtotime($patientVisit->created_at)) }}                                      
+                                        </p>
+                                    </td>
+                                    @endif
+                                    
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row">
+                        <table class="table table-bordered fmh_tab tableWidth">
+                            <tbody>
+                                    @foreach($patientLabTests->chunk(2) as $patientLabTest)  
+                                    <tr>       
+                                        @foreach($patientLabTest as $labTest)    
+                                        <td>														
+                                            <span class="ml-2">{{ $labTest->lab_test_name }}</span> <br>
+                                        </td>    
+                                        @endforeach                                                                                      
+                                    </tr>
+                                    @endforeach
+                            </tbody>
+                        </table>
+                    </div>                                
+                </div>
+            </section>  
+        @endif   
+    
+        @if(isset($patientSugarChart))
+            @if(isset($practitioner))
+            <section class="content page-break">
+                <div class="container-fluid">
+                    <div class="row">
+                        <table width="100%" class="table fmh_tab tableWidth">
+                            <tbody>
+                                <tr style="border: 0px solid black">
+                                    <td style="border: 0px solid black">
+                                        @if(isset($practitioner->name))
+                                            <h1 style="text-align: center;">{{ $practitioner->name }}</h1>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr style="border: 0px solid black">
+                                    <td style="border: 0px solid black">
+                                        @if(isset($practitioner->qualification->title))
+                                        <p style="text-align: center;">{{ $practitioner->qualification->title }}</p>
+                                        @endif
+                                        @if(isset($practitioner->description))
+                                        <p style="text-align: center;">{{ $practitioner->description }}</p> 
+                                        @endif
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            @endif
+            
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <table width="100%" class="table fmh_tab tableWidth">
+                            <tbody>
+                                <tr style="border: 0px solid black">
+                                    @if(isset($patient->name))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Patient Name:</b> {{ $patient->name }} 
+                                        </p>
+                                    </td>
+                                    @endif
+
+                                    @if(isset($patient->age) && isset($patient->gender))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Age / Sex:</b> {{ $patient->age }} Years / @if($patient->gender == 1) Male @elseif($patient->gender == 2) Female @elseif($patient->gender == 3) Other @endif                                          
+                                        </p>
+                                    </td>
+                                    @endif
+
+                                    @if(isset($patientVisit->created_at))
+                                    <td style="border: 0px solid black">
+                                        <p>
+                                            <b>Date:</b> {{ date('d-M-Y', strtotime($patientVisit->created_at)) }}                                      
+                                        </p>
+                                    </td>
+                                    @endif
+                                    
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="page_break_inside">
+                        <h2 style="text-align:center; text-decoration: underline;">Blood Glucose Monitoring:</h2>
+                        <h4 style="text-align: center">Please Check Your Blood Glucose In Shaded Area</h4>
+                        <div class="row">
+                            <table width="100%" class="table table-bordered fmh_tab tableWidth">
+                                <tbody>
+                                    <div class="clearfix suger-chart mt-4">
+                                        <div class="table-responsive mt-4">
+                                            <table class="table new-table">
+                                            <thead>
+                                                <tr>
+                                                    <th class="light-font">Monitoring Time</th>
+                                                    <th>Sunday</th>
+                                                    <th>Monday</th>
+                                                    <th>Tuesday</th>
+                                                    <th>Wednesday</th>
+                                                    <th>Thursday</th>
+                                                    <th>Friday</th>
+                                                    <th>Saturday</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Before Breakfast</td>
+                                                    <td @if($patientSugarChart->day_1_before_breakfast == 1) class="fill-bg" @endif><div @if($patientSugarChart->day_1_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_before_breakfast == 1) class="fill-bg" @endif><div @if($patientSugarChart->day_2_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_before_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_before_breakfast == 1) class="fill-bg" @endif><div @if($patientSugarChart->day_4_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_before_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_before_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_before_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_before_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Hours after Breakfast</td>
+                                                    <td @if($patientSugarChart->day_1_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_2_hours_after_breakfast == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_2_hours_after_breakfast == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Before Lunch</td>
+                                                    <td @if($patientSugarChart->day_1_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_before_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_before_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Hours after Lunch</td>
+                                                    <td @if($patientSugarChart->day_1_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_2_hours_after_lunch == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_2_hours_after_lunch == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Before Dinner</td>
+                                                    <td @if($patientSugarChart->day_1_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_before_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_before_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>2 Hours after Dinner</td>
+                                                    <td @if($patientSugarChart->day_1_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_2_hours_after_dinner == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_2_hours_after_dinner == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>At Bedtime</td>
+                                                    <td @if($patientSugarChart->day_1_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_bed_time == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_bed_time == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>At 3:00 AM</td>
+                                                    <td @if($patientSugarChart->day_1_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_1_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_2_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_2_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_3_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_3_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_4_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_4_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_5_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_5_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_6_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_6_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                    <td @if($patientSugarChart->day_7_at_3_am == 1) class="fill-bg" @endif>
+                                                    <div @if($patientSugarChart->day_7_at_3_am == 1) class="fill-bg" style="height:20px;"  @endif> </div></td>
+                                                </tr>
+                                            </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>           
+                </div>
+            </section>
+        @endif
+    </div>
+    <div style="clear:both;"></div>
+    </div>
+
+        
+    <div class="divFooter col-12 mt-4">
+        <div class="row">
+            <div class="col-sm-4" style="padding-bottom: 10px;">
+                <p> Print Date &amp; Time: {{ date('jS M Y H:i:s') }}</p>
+            </div>
+            <div class="col-sm-4">
+                <center><p>Powered By Infinit Connections</p></center>
+            </div>
+            @if(isset($practitioner->name))
+            <div class="col-sm-4" style="text-align: right;">
+                <center>
+                <p>User: {{ $practitioner->name }} </p>
+                </center>
+            </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- @if($practitioner->prescription_pad_footer_image != null && Storage::exists($practitioner->prescription_pad_footer_image))
+    <div class="back-img-footer mt-4">
+        <img style="width: 1348px; height: 50px; bottom:0;" src="{{ asset('storage/app/public/'.$practitioner->prescription_pad_footer_image) }}" alt="Letter Pad Footer Image"> 
+    </div>
+    @endif --}}
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+[18-Nov-2020 17:38:43 Asia/Karachi] PHP Warning:  Uncaught ErrorException: require(/home/myeomxjo/public_html/routes/web.php): failed to open stream: No such file or directory in /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteFileRegistrar.php:35
+Stack trace:
+#0 /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteFileRegistrar.php(35): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError(2, 'require(/home/m...', '/home/myeomxjo/...', 35, Array)
+#1 /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteFileRegistrar.php(35): require()
+#2 /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/Router.php(415): Illuminate\Routing\RouteFileRegistrar->register('/home/myeomxjo/...')
+#3 /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/Router.php(373): Illuminate\Routing\Router->loadRoutes('/home/myeomxjo/...')
+#4 /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteRegistrar.php(121): Illuminate\Routi in /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteFileRegistrar.php on line 35
+[18-Nov-2020 17:38:43 Asia/Karachi] PHP Fatal error:  Illuminate\Routing\RouteFileRegistrar::register(): Failed opening required '/home/myeomxjo/public_html/routes/web.php' (include_path='.:/opt/alt/php72/usr/share/pear') in /home/myeomxjo/public_html/vendor/laravel/framework/src/Illuminate/Routing/RouteFileRegistrar.php on line 35

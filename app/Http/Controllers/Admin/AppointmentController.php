@@ -1,0 +1,793 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Appointment;
+use App\Models\Notification;
+use App\Models\Patient;
+use App\Models\PatientType;
+use App\Models\Payment;
+use App\Models\Practitioner;
+use App\Models\PractitionerClinicDay;
+use App\Models\PractitionerClinics;
+use Auth;
+use DateInterval;
+use DatePeriod;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Input;
+use Mail;
+use Redirect;
+use Storage;
+use URL;
+use Validator;
+
+class AppointmentController extends Controller
+{
+    // show list of all appointments
+    public function index()
+    {
+        $appointments = Appointment::orderBy('date', 'DESC');
+
+        $appointments = $appointments->with(['patient', 'practitioner', 'payment', 'patientType', 'patientVisits'])->get();
+        $appointments = $appointments->toArray();
+
+        usort($appointments, function ($first, $second) {
+            return (strtotime($first['date'] . ' ' . $first['time_slot']) > strtotime($second['date'] . ' ' . $second['time_slot']));
+        });
+        return view('admin.appointment.index', ['appointments' => $appointments, 'title' => 'Appointments']);
+    }
+
+    // create new appointment
+    public function create()
+    {
+        $practitioners = Practitioner::where('status', 1)
+            ->get();
+
+        $patients = Patient::where('status', 1)
+            ->get();
+        $patientTypes = PatientType::where('status', 1)->get();
+
+        return view('admin.appointment.create', ['practitioners' => $practitioners, 'patients' => $patients, 'title' => 'Create Appointment', 'patientTypes' => $patientTypes]);
+    }
+
+    // store new Appointment
+    public function store(Request $request)
+    {
+        // return $request->all();
+        $rules = [
+            'patient_id' => 'required',
+            'patient_type_id' => 'required',
+            'practitioner_id' => 'required',
+            'clinic_id' => 'required',
+            'date' => 'required',
+            'time_slot' => 'required',
+            'type' => 'required',
+            'status' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return Redirect::back()->withErrors($validator)->withInput(Input::all());
+        }
+
+        $patient = Patient::find($request->patient_id);
+
+        $practitioner = Practitioner::find($request->practitioner_id);
+
+        $patientAppointmentExist = Appointment::where('patient_id', $patient->id)
+            ->where('date', Carbon::parse($request->date)->format('Y-m-d'))
+            ->where('time_slot', $request->time_slot)
+            ->whereNotIn('status', [2, 4])
+            ->first();
+
+        if (!empty($patientAppointmentExist)) {
+            return Redirect::back()->with('error-message', 'Patient already have meeting with someone on selected Date and Time.');
+        }
+
+        $practitionerAppointmentExist = Appointment::where('practitioner_id', $practitioner->id)
+            ->where('date', Carbon::parse($request->date)->format('Y-m-d'))
+            ->where('time_slot', $request->time_slot)
+            ->whereNotIn('status', [2, 4])
+            ->first();
+
+        if (!empty($practitionerAppointmentExist)) {
+            return Redirect::back()->with('error-message', 'Practitioner already have meeting with someone on selected Date and Time.');
+        }
+
+        // if($request->type == 1){
+        //     if($request->status == 1 || $request->status == 3){
+        //         $url = env('BIGBLUE_APP_URL');
+        //         $secret = env('BIGBLUE_APP_SECRET');
+        //         $endpoint = env('BIGBLUE_APP_ENDPOINT');
+
+        //         $bbb = new BigBlueButton($url, $secret, $endpoint);
+        //         $version = $bbb->server->getVersion();
+
+        //         // Add a meeting.
+        //         $meeting = $bbb->server->addMeeting([
+        //             'id' => str_random(10).time(),
+        //             'attendeePW' => str_random(12).time(),
+        //             'moderatorPW' => str_random(12).time(),
+        //             'name' => 'Meeting',
+        //             'welcome' => 'Welcome to %%CONFNAME%%.',
+        //             'logoutURL' => route('homeScreen'),
+        //             'record' => false,
+        //             'autoStartRecording' => false,
+        //             'maxParticipants' => 1,
+        //             'meetingExpireWhenLastUserLeftInMinutes' => 1,
+        //             'guestPolicy' => 'ASK_MODERATOR'
+
+        //         ]);
+        //     }
+        // }
+
+        // Get meeting join URL for a practitioner.
+        $practitioner_name = $practitioner->name;
+        // Get meeting join URL for an patient:
+        $patient_name = $patient->name;
+
+        // if($request->type == 1){
+        //     if($request->status == 1 || $request->status == 3){
+        //         $practitioner_url = $meeting->join($practitioner_name, true);
+        //         $patient_url = $meeting->join($patient_name);
+        //     }
+        //     else{
+        //         $practitioner_url = null;
+        //         $patient_url = null;
+        //     }
+        // }
+        // else{
+        //     $practitioner_url = null;
+        //     $patient_url = null;
+        // }
+
+        $practitioner_url = null;
+        $patient_url = null;
+        $otp = mt_rand(100000, 999999);
+
+        $appointmentData = [
+            'patient_id' => $request->patient_id,
+            'patient_type_id' => $request->patient_type_id,
+            'practitioner_id' => $request->practitioner_id,
+            'clinic_id' => $request->clinic_id,
+            'time_slot' => $request->time_slot,
+            'practitioner_url' => $practitioner_url,
+            'patient_url' => $patient_url,
+            'date' => Carbon::parse($request->date)->format('Y-m-d'),
+            'type' => $request->type,
+            'status' => $request->status,
+            'otp' => 123456
+        ];
+
+        $appointment = Appointment::create($appointmentData);
+
+        if ($request->fee != null && $request->payment_method != null && $request->payment_status != null) {
+            $randomNumber = rand(10000000, 99999999);
+
+            $paymentData = [
+                'patient_id' => $appointment->patient_id,
+                'practitioner_id' => $appointment->practitioner_id,
+                'appointment_id' => $appointment->id,
+                'transaction_id' => $randomNumber,
+                'date' => Carbon::now()->format('Y-m-d H:i:s'),
+                'amount' => $request->fee,
+                'payment_method' => $request->payment_method,
+                'payment_status' => $request->payment_status,
+            ];
+
+            $payment = Payment::create($paymentData);
+
+        }
+
+        $phone = str_replace('-', '', $appointment->patient->phone);
+        $phone = substr($phone, 1);
+        $phone = '92' . $phone;
+        $doctor = str_replace(' ', '', $appointment->practitioner->name);
+        $time = str_replace(' ', '', $appointment->time_slot);
+        $link = route('joinAppointment', ['patientId' => $appointment->patient->id, 'practitionerId' => $appointment->practitioner->id, 'appointmentId' => $appointment->id]);
+        if ($appointment->type == 1) {
+            if ($appointment->payment->payment_status == "Unpaid") {
+                $message = 'Your%20online%20appointment%20is%20booked%20with%20' . $doctor . '%20on%20(' . date('d-m-Y', strtotime($appointment->date)) . ')%20at%20(' . $time . ').%20Your%20video%20call%20link%20is%0a' . $link;
+            } else {
+                $message = 'Your%20online%20appointment%20is%20booked%20with%20' . $doctor . '%20on%20(' . date('d-m-Y', strtotime($appointment->date)) . ')%20at%20(' . $time . ').%20Please%20pay%20your%20payment%20form%20your%20portal.';
+            }
+        } else {
+            $message = 'Your%20appointment%20is%20booked%20with%20' . $doctor . '%20on%20(' . date('d-m-Y', strtotime($appointment->date)) . ')%20at%20(' . $time . ').';
+        }
+
+        $curl = curl_init();
+
+
+        $curlSet = curl_setopt_array($curl, array(
+            CURLOPT_URL => "http://api.bizsms.pk/api-send-branded-sms.aspx?username=eonhc@bizsms.pk&pass=e3th3rt9&text=" . $message . "&masking=SMS%20Alert&destinationnum=" . $phone . "&language=English",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        // $data = array(
+        //     'practitioner_name' => $practitioner->name,
+        //     'patient_name' => $patient->name,
+        //     'practitioner_email' => $practitioner->email,
+        //     'patient_email' => $patient->email,
+        //     'patient_url' => $appointment->patient_url,
+        //     'practitioner_url' => $appointment->practitioner_url,
+        //     'date' => $appointment->date,
+        //     'time_slot' => $appointment->time_slot,
+        //     'type' => $appointment->type,
+        //     'status' => $appointment->status,
+        // );
+
+        // try{
+        //     Mail::send('admin.mails.practitioner', ["data" => $data], function ($message) use ($data) {
+        //         $message->to($data['practitioner_email'])->subject("Meeting Reminder");
+        //     });
+        // } catch (\Exception $e) {
+
+        // }
+
+        // try{
+        //     Mail::send('admin.mails.patient', ["data" => $data], function ($message) use ($data) {
+        //         $message->to($data['patient_email'])->subject("Meeting Reminder");
+        //     });
+        // } catch (\Exception $e) {
+
+        // }
+
+        // $historyData = [
+        //     'patient_id' => $appointment->patient_id,
+        //     'practitioner_id' => $appointment->practitioner_id,
+        //      'clinic_id' => $appointment->clinic_id,
+        // ];
+
+        // $history = History::create($historyData);
+
+         $notificationData = [
+             'user_type' => 1,
+             'user_id' =>  $appointment->patient_id,
+             'is_read' => 0,
+             'title' => 'Appointment Created.',
+             'message' => 'Please check out appointment list created by '. $practitioner->email
+         ];
+
+         $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+         $notificationData = [
+             'user_type' => 2,
+             'user_id' =>  $appointment->practitioner_id,
+             'is_read' => 0,
+             'title' => 'Appointment Created.',
+             'message' => 'Please check out appointment list created for '. $patient->email
+         ];
+
+         $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+
+        // $notificationData = [
+        //     'user_type' => 4,
+        //     'user_id' =>  0,
+        //     'is_read' => 0,
+        //     'title' => 'Appointment Created.',
+        //     'message' => 'Please check out appointment list created for '. $patient->email . ' and '. $practitioner->email
+        // ];
+
+        // $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+
+        return redirect()->route('appointmentList')->with('success-message', 'Record Added Successfully.');
+    }
+
+    //edit Appointment
+    public function edit($id)
+    {
+        $appointment = Appointment::find($id);
+
+        $practitioners = Practitioner::where('status', 1)
+            ->get();
+
+        $patients = Patient::where('status', 1)
+            ->get();
+
+        $patientTypes = PatientType::where('status', 1)->get();
+
+        $practitioner = Practitioner::find($appointment->practitioner_id);
+
+        $clinics = $practitioner->getClinics;
+
+        $practitionerClinic = PractitionerClinics::where('practitioner_id', $practitioner->id)
+            ->where('clinic_id', $appointment->clinic_id)
+            ->first();
+
+        $timeIn = Carbon::parse($practitionerClinic->from_time);
+
+        $timeOut = Carbon::parse($practitionerClinic->to_time);
+
+
+        $interval = new DateInterval('PT10M');
+
+        $time_slots = array();
+
+        $period = new DatePeriod($timeIn, $interval, $timeOut);
+
+        $existingSlots = Appointment::where('id', '!=', $appointment->id)
+            ->where('practitioner_id', $appointment->practitioner_id)
+            ->where('date', $appointment->date)
+            ->where('status', '!=', 4)
+            ->get()
+            ->pluck('time_slot')
+            ->toArray();
+
+        $currentDate = date('d-m-Y', strtotime(Carbon::now()));
+        $currentTime = date('H:i:s', strtotime(Carbon::now()));
+        $appointmentDate = date('d-m-Y', strtotime($appointment->date));
+
+        foreach ($period as $time) {
+            if ($currentDate >= $appointmentDate) {
+                if ($time->format('H:i:s') > $currentTime) {
+                    $timeslot = $time->format('h:i a');
+                    if (!in_array($timeslot, $existingSlots, true)) {
+                        $time_slots[] = array('key' => $timeslot, 'value' => $timeslot);
+                    }
+                }
+            } else {
+                $timeslot = $time->format('h:i a');
+                if (!in_array($timeslot, $existingSlots, true)) {
+                    $time_slots[] = array('key' => $timeslot, 'value' => $timeslot);
+                }
+            }
+        }
+
+
+        return view('admin.appointment.edit', ['title' => 'Edit Appointment', 'appointment' => $appointment, 'practitioners' => $practitioners, 'patients' => $patients, 'clinics' => $clinics, 'time_slots' => $time_slots, 'patientTypes' => $patientTypes]);
+    }
+
+    // udpate Appointment
+    public function update(Request $request)
+    {
+
+        $appointment = Appointment::where('id', $request->appointment_id)
+            ->first();
+
+        $rules = [
+            'patient_id' => 'required',
+            'patient_type_id' => 'required',
+            'practitioner_id' => 'required',
+            'clinic_id' => 'required',
+            'date' => 'required',
+            'time_slot' => 'required',
+            'type' => 'required',
+            'status' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return Redirect::back()->withErrors($validator)->withInput(Input::all());
+        }
+
+        $patient = Patient::find($request->patient_id);
+
+        $practitioner = Practitioner::find($request->practitioner_id);
+
+        $patientAppointmentExist = Appointment::where('id', '!=', $appointment->id)
+            ->where('patient_id', $patient->id)
+            ->where('date', Carbon::parse($request->date)->format('Y-m-d'))
+            ->where('time_slot', $request->time_slot)
+            ->whereNotIn('status', [2, 4])
+            ->first();
+
+        if (!empty($patientAppointmentExist)) {
+            return Redirect::back()->with('error-message', 'Patient already have meeting with someone on selected Date and Time.');
+        }
+
+        $practitionerAppointmentExist = Appointment::where('id', '!=', $appointment->id)
+            ->where('practitioner_id', $practitioner->id)
+            ->where('date', Carbon::parse($request->date)->format('Y-m-d'))
+            ->where('time_slot', $request->time_slot)
+            ->whereNotIn('status', [2, 4])
+            ->first();
+
+        if (!empty($practitionerAppointmentExist)) {
+            return Redirect::back()->with('error-message', 'Practitioner already have meeting with someone on selected Date and Time.');
+        }
+
+        // if($request->type == 1){
+        //     if($request->status == 1 || $request->status == 3){
+        //         $url = env('BIGBLUE_APP_URL');
+        //         $secret = env('BIGBLUE_APP_SECRET');
+        //         $endpoint = env('BIGBLUE_APP_ENDPOINT');
+
+        //         $bbb = new BigBlueButton($url, $secret, $endpoint);
+        //         $version = $bbb->server->getVersion();
+
+        //         // Add a meeting.
+        //         $meeting = $bbb->server->addMeeting([
+        //             'id' => str_random(10).time(),
+        //             'attendeePW' => str_random(12).time(),
+        //             'moderatorPW' => str_random(12).time(),
+        //             'name' => 'Meeting',
+        //             'welcome' => 'Welcome to %%CONFNAME%%.',
+        //             'logoutURL' => route('homeScreen'),
+        //             'record' => false,
+        //             'autoStartRecording' => false,
+        //             'maxParticipants' => 1,
+        //             'meetingExpireWhenLastUserLeftInMinutes' => 1,
+        //             'guestPolicy' => 'ASK_MODERATOR'
+
+        //         ]);
+        //     }
+        // }
+
+        // Get meeting join URL for a practitioner.
+        $practitioner_name = $practitioner->name;
+        // Get meeting join URL for an patient:
+        $patient_name = $patient->name;
+
+        // if($request->type == 1){
+        //     if($request->status == 1 || $request->status == 3){
+        //         $practitioner_url = $meeting->join($practitioner_name, true);
+        //         $patient_url = $meeting->join($patient_name);
+        //     }
+        //     else{
+        //         $practitioner_url = null;
+        //         $patient_url = null;
+        //     }
+        // }
+        // else{
+        //     $practitioner_url = null;
+        //     $patient_url = null;
+        // }
+
+        $practitioner_url = null;
+        $patient_url = null;
+
+        $appointmentData = [
+            'patient_id' => $request->patient_id,
+            'patient_type_id' => $request->patient_type_id,
+            'practitioner_id' => $request->practitioner_id,
+            'clinic_id' => $request->clinic_id,
+            'time_slot' => $request->time_slot,
+            'practitioner_url' => $practitioner_url,
+            'patient_url' => $patient_url,
+            'date' => Carbon::parse($request->date)->format('Y-m-d'),
+            'type' => $request->type,
+            'status' => $request->status,
+        ];
+
+        $appointment->update($appointmentData);
+
+        if ($request->fee != null && $request->payment_method != null && $request->payment_status != null) {
+            $payment = Payment::where('appointment_id', $appointment->id)->first();
+            if ($payment == null) {
+                $randomNumber = rand(10000000, 99999999);
+
+                $paymentData = [
+                    'patient_id' => $appointment->patient_id,
+                    'practitioner_id' => $appointment->practitioner_id,
+                    'appointment_id' => $appointment->id,
+                    'transaction_id' => $randomNumber,
+                    'date' => Carbon::now()->format('Y-m-d H:i:s'),
+                    'amount' => $request->fee,
+                    'payment_method' => $request->payment_method,
+                    'payment_status' => $request->payment_status,
+                ];
+
+                Payment::create($paymentData);
+            } else {
+                $paymentData = [
+                    'amount' => $request->fee,
+                    'payment_method' => $request->payment_method,
+                    'payment_status' => $request->payment_status,
+                ];
+
+                $payment->update($paymentData);
+            }
+        }
+
+        $phone = str_replace('-', '', $appointment->patient->phone);
+        $phone = substr($phone, 1);
+        $phone = '92' . $phone;
+        $doctor = str_replace(' ', '', $appointment->practitioner->name);
+        $time = str_replace(' ', '', $appointment->time_slot);
+        $link = route('joinAppointment', ['patientId' => $appointment->patient->id, 'practitionerId' => $appointment->practitioner->id, 'appointmentId' => $appointment->id]);
+        if ($appointment->type == 1) {
+            $message = 'Your%20online%20appointment%20is%20updated%20with%20' . $doctor . '%20on%20(' . date('d-m-Y', strtotime($appointment->date)) . ')%20at%20(' . $time . ').%20Your%20video%20call%20link%20is%0a' . $link;
+        } else {
+            $message = 'Your%20appointment%20is%20updated%20with%20' . $doctor . '%20on%20(' . date('d-m-Y', strtotime($appointment->date)) . ')%20at%20(' . $time . ').';
+        }
+
+        $curl = curl_init();
+
+
+        $curlSet = curl_setopt_array($curl, array(
+            CURLOPT_URL => "http://api.bizsms.pk/api-send-branded-sms.aspx?username=eonhc@bizsms.pk&pass=e3th3rt9&text=" . $message . "&masking=SMS%20Alert&destinationnum=" . $phone . "&language=English",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        // $data = array(
+        //     'practitioner_name' => $practitioner->name,
+        //     'patient_name' => $patient->name,
+        //     'practitioner_email' => $practitioner->email,
+        //     'patient_email' => $patient->email,
+        //     'patient_url' => $appointment->patient_url,
+        //     'practitioner_url' => $appointment->practitioner_url,
+        //     'date' => $appointment->date,
+        //     'time_slot' => $appointment->time_slot,
+        //     'type' => $appointment->type,
+        //     'status' => $appointment->status,
+        // );
+
+        // try{
+        //     Mail::send('admin.mails.practitioner', ["data" => $data], function ($message) use ($data) {
+        //         $message->to($data['practitioner_email'])->subject("Meeting Reminder");
+        //     });
+        // } catch (\Exception $e) {
+
+        // }
+
+        // try{
+        //     Mail::send('admin.mails.patient', ["data" => $data], function ($message) use ($data) {
+        //         $message->to($data['patient_email'])->subject("Meeting Reminder");
+        //     });
+        // } catch (\Exception $e) {
+
+        // }
+
+        // $historyData = [
+        //     'patient_id' => $appointment->patient_id,
+        //     'practitioner_id' => $appointment->practitioner_id,
+        //     'clinic_id' => $appointment->clinic_id,
+        // ];
+
+        // $history = History::create($historyData);
+
+        // $notificationData = [
+        //     'user_type' => 1,
+        //     'user_id' =>  $appointment->patient_id,
+        //     'is_read' => 0,
+        //     'title' => 'Appointment Updated.',
+        //     'message' => 'Please check out appointment list updated by '. $practitioner->email
+        // ];
+
+        // $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+        // $notificationData = [
+        //     'user_type' => 2,
+        //     'user_id' =>  $appointment->practitioner_id,
+        //     'is_read' => 0,
+        //     'title' => 'Appointment Updated.',
+        //     'message' => 'Please check out appointment list updated for '. $patient->email
+        // ];
+
+        // $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+
+        // $notificationData = [
+        //     'user_type' => 4,
+        //     'user_id' =>  0,
+        //     'is_read' => 0,
+        //     'title' => 'Appointment Updated.',
+        //     'message' => 'Please check out appointment list updated for '. $patient->email . ' and '. $practitioner->email
+        // ];
+
+        // $notification = Notification::create($notificationData);
+
+        // $currentTime = \Carbon\Carbon::now()->setTimezone('Asia/Karachi')->format('l d M Y h:i a');
+
+        // event(new Notify($notification->id, $notification->title, $notification->message, $currentTime ,$notification->user_type, $notification->user_id));
+
+
+        return redirect()->route('appointmentList')->with('success-message', 'Record Updated Successfully.');
+    }
+
+    // Get list of clinics by practitioner id for dropdowns
+    public function getClinics(Request $request)
+    {
+        $practitioner = Practitioner::find($request->practitioner_id);
+
+        $clinics = $practitioner->getClinics;
+
+        return ['clinics' => $clinics];
+    }
+
+    // Get time slots
+    public function getTimeSlots(Request $request)
+    {
+        if (
+            empty($request->selected_date) ||
+            empty($request->patient_id) ||
+            empty($request->practitioner_id)
+        ) {
+            return ['status' => 0, 'error' => 'Patient / Practitioner / Clinic / Date must be selected.'];
+        }
+
+        try {
+            $selected_date = Carbon::parse($request->selected_date)->format('Y-m-d');
+        } catch (Exception $err) {
+            return ['status' => 0, 'error' => 'Date format is invalid'];
+        }
+
+        $day = strtolower(date('l', strtotime($selected_date)));
+
+        $practitionerClinic = PractitionerClinics::where('practitioner_id', $request->practitioner_id)
+            ->where('clinic_id', $request->clinic_id)
+            ->first();
+
+        $practitionerClinicDays = PractitionerClinicDay::where('practitioner_clinic_id', $practitionerClinic->id)
+            ->get()
+            ->pluck('day')
+            ->toArray();
+
+        // $fromDay = $practitionerClinic->from_day;
+
+        // $toDay = $practitionerClinic->to_day;
+
+        // $allDays = array(
+        //     0 => 'monday',
+        //     1 => 'tuesday',
+        //     2 => 'wednesday',
+        //     3 => 'thursday',
+        //     4 => 'friday',
+        //     5 => 'saturday',
+        //     6 => 'sunday',
+        // );
+
+        // $fromDayKey = array_search($fromDay, $allDays);
+        // $toDayKey = array_search($toDay, $allDays);
+        // $selectedDay = array_search($day, $allDays);
+
+        // $actualKey = array();
+
+        // for ($i=$fromDayKey; $i <= $toDayKey; $i++) {
+        //     $actualKey[$i] = $i;
+        // }
+
+        if (!in_array($day, $practitionerClinicDays, true)) {
+            return ['status' => 0, 'error' => 'Practitioner is not available in this clinic on your selected date.'];
+        }
+
+        $timeIn = Carbon::parse($practitionerClinic->from_time);
+
+        $timeOut = Carbon::parse($practitionerClinic->to_time);
+
+        $interval = new DateInterval('PT10M');
+
+        $time_slots = array();
+
+        $period = new DatePeriod($timeIn, $interval, $timeOut);
+
+        if ($request->appointment_id == 0) {
+            $existingSlots = Appointment::where('practitioner_id', $request->practitioner_id)
+                ->where('date', $selected_date)
+                ->where('status', '!=', 4)
+                ->get()
+                ->pluck('time_slot')
+                ->toArray();
+        } else {
+            $existingSlots = Appointment::where('id', '!=', (int)($request->appointment_id))
+                ->where('practitioner_id', $request->practitioner_id)
+                ->where('date', $selected_date)
+                ->where('status', '!=', 4)
+                ->get()
+                ->pluck('time_slot')
+                ->toArray();
+        }
+
+        $currentDate = date('d-m-Y', strtotime(Carbon::now()));
+        $currentTime = date('H:i:s', strtotime(Carbon::now()));
+        $selectedDate = date('d-m-Y', strtotime($request->selected_date));
+
+        foreach ($period as $time) {
+            if ($currentDate == $selectedDate) {
+                if ($time->format('H:i:s') > $currentTime) {
+                    $timeslot = $time->format('h:i a');
+                    if (!in_array($timeslot, $existingSlots, true)) {
+                        $time_slots[] = array('key' => $timeslot, 'value' => $timeslot);
+                    }
+                }
+            } else {
+                $timeslot = $time->format('h:i a');
+                if (!in_array($timeslot, $existingSlots, true)) {
+                    $time_slots[] = array('key' => $timeslot, 'value' => $timeslot);
+                }
+            }
+
+        }
+
+        return ['status' => 1, 'time_slots' => $time_slots];
+
+    }
+
+    public function appointmentFilter(Request $request)
+    {
+        if (!empty($request->date_from) && !empty($request->date_to)) {
+            $rules = [
+                'date_from' => 'date',
+                'date_to' => 'date|after_or_equal:date_from',
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+
+            $selectedValues = array();
+            $selectedValues['date_from'] = $request->date_from;
+            $selectedValues['date_to'] = $request->date_to;
+            $selectedValues['status'] = $request->status;
+
+            if ($validator->fails()) {
+                $appointments = Appointment::orderBy('id', 'DESC')->get();
+
+                return view('admin.appointment.index', ['title' => 'Appointments', 'appointments' => $appointments, 'selectedValues' => $selectedValues, 'messageError' => 'Appointment Date From must be less than To Appointment Date To!']);
+            }
+        }
+
+        $appointments = (new Appointment)->newQuery();
+        $selectedValues = array();
+
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $from = date("Y-m-d", strtotime($request->date_from));
+            $appointments->where('date', '>=', $from);
+            $selectedValues['date_from'] = $request->date_from;
+        }
+
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $to = date("Y-m-d", strtotime($request->date_to));
+            $appointments->where('date', '<=', $to);
+            $selectedValues['date_to'] = $request->date_to;
+        }
+
+        if ($request->has('status') && $request->status != null) {
+            $appointments->where('status', $request->status);
+            $selectedValues['status'] = $request->status;
+        }
+
+        $appointments = $appointments->orderby('date', 'DESC');
+
+        $appointments = $appointments->with(['patient', 'practitioner', 'payment', 'patientType'])->get();
+        $appointments = $appointments->toArray();
+
+        usort($appointments, function ($first, $second) {
+            return (strtotime($first['date'] . ' ' . $first['time_slot']) > strtotime($second['date'] . ' ' . $second['time_slot']));
+        });
+
+        return view('admin.appointment.index', ['title' => 'Appointments', 'appointments' => $appointments, 'selectedValues' => $selectedValues]);
+    }
+}
